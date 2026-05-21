@@ -1,124 +1,147 @@
 # Sentiment Analysis
 
-Amazon 상품 리뷰를 **긍정(1) / 부정(0)** 으로 분류하는 미니 프로젝트입니다.
-Andrew Ng 강의에서 배운 로지스틱 회귀를 numpy 로 직접 짜보고 싶어서 만들었고,
-완성된 모델을 Streamlit 으로 띄워서 누구나 리뷰를 넣고 결과를 확인할 수 있게 했어요.
+A binary classifier that predicts whether an Amazon product review is **positive (1)** or **negative (0)**.
+I built this after taking Andrew Ng's Machine Learning course — I wanted to implement logistic regression
+from scratch in numpy instead of just calling scikit-learn. The trained model is deployed on
+[Streamlit](https://share.streamlit.io) so anyone can paste in a review and see the prediction.
 
-## 한 줄로 어떻게 동작하나
+> **Live demo:** https://sentiment-analysis-kt9auxsyox4oa4hnwnn5zv.streamlit.app/
+
+---
+
+## How it works
+
+In one sentence: **the model learns a +/- score for each word, then sums up the scores of words present in the review to make a decision.**
+
+Top weighted words my trained model learned:
+
+| Positive words (score) | Negative words (score) |
+|---|---|
+| great `+7.87` | not `−7.01` |
+| love `+4.21` | waste `−3.39` |
+| excellent `+3.63` | bad `−3.10` |
+| best `+3.51` | disappointed `−3.01` |
+| perfect `+2.57` | worst `−2.75` |
+| amazing `+2.04` | terrible `−2.22` |
+
+When `great` appears, the score is pushed +7.87 toward "positive"; when `terrible` appears, it gets pushed −2.22 toward "negative". The total score goes through a sigmoid to produce a probability in [0, 1], and we threshold at 0.5.
+
+Examples:
 
 ```
-리뷰 텍스트 → (전처리) → TF-IDF 벡터 → sigmoid(w·x + b) → 확률 → 0 / 1
+"This is a great product, I love it!"
+  → great(+7.87) + love(+4.21) + small contributions = z ≈ +12
+  → sigmoid(12) ≈ 0.999 → Positive (1)
+
+"Waste of money, terrible quality."
+  → waste(−3.39) + money(−3.43) + terrible(−2.22) + ... ≈ −9
+  → sigmoid(−9) ≈ 0.0001 → Negative (0)
 ```
 
-- **전처리**: 소문자화, HTML/URL 제거, 알파벳만 남기기
-- **TF-IDF**: 단어와 두 단어 묶음(bigram) 중 자주 등장하는 2만 개를 피처로
-- **로지스틱 회귀**: 0~1 사이 확률을 뱉는 함수를 학습. 0.5 이상이면 긍정으로 판단
+To see the actual weights yourself:
 
-## 원리 (수식)
+```powershell
+python -m src.inspect_weights
+```
 
-이항 분류 logistic regression 은 결국 세 줄짜리 수학입니다.
+---
 
-**1) 예측 (Forward)**
+## The math (straight from Andrew Ng's course)
 
+Binary logistic regression is essentially three lines of math.
+
+**1) Forward**
 ```
 z = w · x + b
-ŷ = σ(z) = 1 / (1 + e^(-z))    ← 0~1 사이 확률
+ŷ = σ(z) = 1 / (1 + e^(-z))    ← probability in [0, 1]
 ```
 
-**2) 비용 함수 — Binary Cross-Entropy + L2 정규화**
-
+**2) Cost — Binary Cross-Entropy + L2 regularization**
 ```
 J(w, b) = -1/m · Σ [ y·log(ŷ) + (1-y)·log(1-ŷ) ] + (λ/2m)·||w||²
 ```
 
-정답이면 `log(ŷ)` 가 0 에 가깝고, 틀리면 음의 무한대로 가서 페널티가 커지는 구조.
-
-**3) 경사하강법 (Batch Gradient Descent)**
-
+**3) Gradient Descent + Momentum**
 ```
 dw = 1/m · Xᵀ(ŷ - y) + (λ/m)·w
-db = 1/m · Σ(ŷ - y)
-w := w - α·dw,    b := b - α·db
+v_w := β·v_w + (1-β)·dw         ← velocity (momentum)
+w   := w - α·v_w
 ```
 
-`src/model.py` 의 `LogisticRegressionScratch` 에 이 세 줄이 그대로 들어있습니다.
-scipy sparse matrix 를 받게 해서 5만 × 2만 피처에서도 빠르게 돌아갑니다.
+`src/model.py` (the `LogisticRegressionScratch` class) implements exactly these three lines. It accepts scipy sparse matrices so it stays fast on 50K × 30K features.
 
-## 데이터
+---
+
+## Data
 
 [`fancyzhx/amazon_polarity`](https://huggingface.co/datasets/fancyzhx/amazon_polarity)
-— Amazon 리뷰 360만 건에 긍정/부정 라벨이 붙어있는 공개 데이터셋.
+— 3.6M Amazon reviews labeled positive/negative.
 
-학습 시간 단축을 위해 **클래스당 25,000개씩 균형 샘플링** 해서 5만 건으로 학습 →
-train 80% / dev 10% / test 10% 로 stratified split.
+To keep training fast, I balanced-sampled 25,000 reviews per class (50K total) and split it into train 80% / dev 10% / test 10% (stratified).
 
-## 폴더 구조
+---
+
+## Results
+
+| Metric | train | dev | test |
+|---|---|---|---|
+| accuracy | 0.88 | 0.88 | 0.88 |
+| f1 | 0.88 | 0.87 | 0.88 |
+
+Train ↔ dev gap is ~1 percentage point — no real overfitting.
+
+---
+
+## Project structure
 
 ```
 .
-├── app.py                       ← Streamlit 데모 (배포 진입점)
+├── app.py                            ← Streamlit demo (deployment entry point)
 ├── requirements.txt
-├── data/processed/              ← train/dev/test CSV (학습 후 생성)
-├── models/
-│   ├── sentiment_model.joblib   ← 학습된 모델
-│   └── metrics.json             ← 학습 결과 지표
+├── models/sentiment_model.joblib     ← trained model
 └── src/
-    ├── config.py                ← 모든 하이퍼파라미터
-    ├── preprocessing.py         ← 텍스트 클리닝
-    ├── features.py              ← TF-IDF
-    ├── model.py                 ← 직접 구현한 LogisticRegression
-    ├── download_data.py         ← HuggingFace 에서 받아서 샘플링
-    ├── train.py                 ← 학습 + 평가 + 저장
-    └── predict.py               ← CLI 추론
+    ├── config.py                     ← hyperparameters
+    ├── preprocessing.py              ← text cleaning
+    ├── features.py                   ← TF-IDF vectorizer
+    ├── model.py                      ← from-scratch LogisticRegression
+    ├── download_data.py              ← downloads + samples from HuggingFace
+    ├── train.py                      ← training + evaluation + saving
+    ├── predict.py                    ← CLI inference
+    └── inspect_weights.py            ← print learned word scores
 ```
 
-## 직접 돌려보기
+---
+
+## Running locally
 
 ```powershell
-# 1. 의존성
+# Setup
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 
-# 2. 데이터 다운로드 + 샘플링
+# Download data and train
 python -m src.download_data
-
-# 3. 학습 (CPU 에서 1~3분)
 python -m src.train
 
-# 4. CLI 로 한번 찍어보기
-python -m src.predict "Love it, works exactly as described!"
+# Inspect what the model learned
+python -m src.inspect_weights
 
-# 5. Streamlit 데모 실행
+# Launch the Streamlit demo
 streamlit run app.py
 ```
 
-## 학습하면서 배운 것
+---
 
-- 처음엔 `learning_rate = 0.5`, `n_iters = 300` 으로 돌렸더니 정확도 85% 에서 멈춤. 학습 곡선을 보니 cost 가 0.693 → 0.658 로 거의 안 떨어진 상태였음.
-- TF-IDF 는 값이 [0, 1] 범위라 gradient signal 이 작아서 학습률을 크게 줘야 한다는 걸 깨달음. `learning_rate = 5.0`, `n_iters = 1500`, `lambda_reg = 0.01` 로 바꾸니 90% 넘김.
-- 즉, **하이퍼파라미터는 데이터의 스케일을 보고 정해야 한다**는 게 이번 프로젝트의 핵심 교훈.
+## What I learned
 
-## 결과
+- **Set hyperparameters based on the scale of your features.** My first run used `lr=0.5, n_iters=300`, but cost only dropped from 0.693 → 0.658 (5%) — the model was barely training. TF-IDF values live in [0, 1], so gradients are small. Bumping to `lr=5.0, n_iters=1500` pushed accuracy from 85% to 89%.
+- **Momentum doesn't change the effective learning rate.** With β=0.9, the EMA-style velocity converges to the gradient at steady state — so the per-step magnitude is the same as without momentum. I incorrectly lowered the LR when adding momentum the first time, which slowed training down.
+- **Trigrams hurt more than they help on this dataset.** Most trigrams are too sparse, so they add noise rather than signal. `(1, 2)`-grams is the sweet spot.
 
-```
-train  acc ≈ 0.90
-dev    acc ≈ 0.90
-test   acc ≈ 0.90
-```
+## What I'd try next
 
-학습 곡선과 confusion matrix 는 앱의 **"Model metrics"** 탭에서 확인 가능.
-
-## 배포
-
-[share.streamlit.io](https://share.streamlit.io) 에 올려둔 데모 → *(URL 추가 예정)*
-
-Streamlit Cloud 에 배포할 때는 `models/sentiment_model.joblib` 도 같이 커밋해야 합니다.
-모델 파일이 ~400KB 정도라서 GitHub 100MB 제한과는 무관해요.
-
-## 다음에 해볼 것
-
-- [ ] scikit-learn 의 `LogisticRegression` 으로 같은 데이터 학습해서 직접 구현 버전과 정확도 비교 (sanity check)
-- [ ] Word2Vec / fastText 임베딩으로 피처 교체
-- [ ] 별점 (1~5) 회귀로 확장
-- [ ] 한국어 데이터 (네이버 쇼핑 리뷰) 로 옮기기 — 형태소 분석기 + `TfidfVectorizer(tokenizer=...)` 만 교체하면 됨
+- Compare with scikit-learn's `LogisticRegression` (L-BFGS) on the same data
+- Swap TF-IDF for Word2Vec / fastText embeddings
+- Extend to star-rating regression (1~5)
+- Port to Korean review data (Naver Shopping) — just swap in a KoNLPy tokenizer via `TfidfVectorizer(tokenizer=...)`

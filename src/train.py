@@ -46,6 +46,7 @@ def main():
         learning_rate=config.LEARNING_RATE,
         n_iters=config.N_ITERS,
         lambda_reg=config.LAMBDA_REG,
+        momentum=config.MOMENTUM,
         print_every=config.PRINT_EVERY,
     )
     t0 = time.time()
@@ -68,6 +69,7 @@ def main():
         "learning_rate": config.LEARNING_RATE,
         "n_iters": config.N_ITERS,
         "lambda_reg": config.LAMBDA_REG,
+        "momentum": config.MOMENTUM,
         "max_features": config.MAX_FEATURES,
         "ngram_range": list(config.NGRAM_RANGE),
         "sample_size_per_class": config.SAMPLE_SIZE_PER_CLASS,

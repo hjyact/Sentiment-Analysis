@@ -37,19 +37,29 @@ def _sigmoid(z: np.ndarray) -> np.ndarray:
 
 
 class LogisticRegressionScratch:
-    """Binary logistic regression with batch gradient descent + L2."""
+    """Binary logistic regression with batch gradient descent + L2.
+
+    Supports momentum (Andrew Ng DL Specialization, Course 2):
+        v_w := beta * v_w + (1 - beta) * dw
+        w   := w - alpha * v_w
+    Momentum smooths the update direction so we don't zig-zag, which
+    lets the same iteration budget reach a lower cost. Set momentum=0
+    to recover plain batch gradient descent.
+    """
 
     def __init__(
         self,
         learning_rate: float = 0.5,
         n_iters: int = 300,
         lambda_reg: float = 1.0,
+        momentum: float = 0.9,
         print_every: int = 20,
         verbose: bool = True,
     ):
         self.learning_rate = learning_rate
         self.n_iters = n_iters
         self.lambda_reg = lambda_reg
+        self.momentum = momentum
         self.print_every = print_every
         self.verbose = verbose
 
@@ -79,6 +89,10 @@ class LogisticRegressionScratch:
         n_features = X.shape[1]
         self.w = np.zeros(n_features, dtype=np.float64)
         self.b = 0.0
+        # Velocity terms for momentum (initialized to zero)
+        v_w = np.zeros(n_features, dtype=np.float64)
+        v_b = 0.0
+        beta = self.momentum
         m = X.shape[0]
 
         for it in range(1, self.n_iters + 1):
@@ -93,8 +107,11 @@ class LogisticRegressionScratch:
             dw = np.asarray(dw).ravel() + (self.lambda_reg / m) * self.w
             db = float(np.mean(error))
 
-            self.w -= self.learning_rate * dw
-            self.b -= self.learning_rate * db
+            # Momentum update: v := beta*v + (1-beta)*grad ;  param := param - alpha*v
+            v_w = beta * v_w + (1.0 - beta) * dw
+            v_b = beta * v_b + (1.0 - beta) * db
+            self.w -= self.learning_rate * v_w
+            self.b -= self.learning_rate * v_b
 
             if it == 1 or it % self.print_every == 0 or it == self.n_iters:
                 train_cost = self._cost(a, y)

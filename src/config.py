@@ -16,19 +16,22 @@ TEST_SIZE = 0.10
 DEV_SIZE = 0.10
 
 # TF-IDF features
-MAX_FEATURES = 20_000
-NGRAM_RANGE = (1, 2)
+MAX_FEATURES = 30_000
+NGRAM_RANGE = (1, 2)    # unigram + bigram (trigrams hurt more than help here)
 MIN_DF = 2
 MAX_DF = 0.95
 
-# Logistic regression (hand-built, Andrew Ng style)
+# Logistic regression (hand-built, Andrew Ng style) with momentum
 # Notes on tuning:
 #  - TF-IDF values are in [0, 1] so the gradient signal is small;
 #    a larger learning rate is needed than for raw-count features.
-#  - On 50K balanced samples with 20K sparse features, weak L2 works best.
+#  - Momentum (Andrew Ng DL course 2) smooths updates → faster convergence.
+#    At steady state EMA velocity equals the gradient, so keep LR the same
+#    as without momentum (5.0) — momentum just removes zig-zag, not magnitude.
 LEARNING_RATE = 5.0
-N_ITERS = 1500
-LAMBDA_REG = 0.01     # L2 regularization strength
+N_ITERS = 2000
+LAMBDA_REG = 0.01
+MOMENTUM = 0.9
 PRINT_EVERY = 100
 
 # Artifacts
