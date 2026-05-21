@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data — keep folder, ignore large files
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/raw/sample_reviews.csv
+
+# Models — keep folder, ignore everything except final committed artifacts
+# (We commit the small final model so Streamlit Cloud can load it.)
+models/*.tmp
+models/checkpoint_*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Streamlit cache
+.streamlit/secrets.toml
