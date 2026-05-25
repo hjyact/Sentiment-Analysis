@@ -1,12 +1,9 @@
-"""TF-IDF feature extraction."""
-from __future__ import annotations
-
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 from . import config
 
 
-def build_vectorizer() -> TfidfVectorizer:
+def build_vectorizer():
     return TfidfVectorizer(
         max_features=config.MAX_FEATURES,
         ngram_range=config.NGRAM_RANGE,
