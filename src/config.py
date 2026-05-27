@@ -17,6 +17,13 @@ NGRAM_RANGE = (1, 2)
 MIN_DF = 2
 MAX_DF = 0.95
 
+USE_SKLEARN = True
+
+# sklearn LR
+SKLEARN_C = 1.0
+SKLEARN_MAX_ITER = 1000
+
+# scratch LR (used when USE_SKLEARN = False)
 LEARNING_RATE = 5.0
 N_ITERS = 2000
 LAMBDA_REG = 0.01

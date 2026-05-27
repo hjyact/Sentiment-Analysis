@@ -7,7 +7,7 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 from . import config
 from .features import build_vectorizer
-from .model import LogisticRegressionScratch, SentimentModel
+from .model import LogisticRegressionScratch, SklearnLR, SentimentModel
 from .preprocessing import clean_series
 
 
@@ -31,13 +31,18 @@ def main():
     y_test = test_df["label"].to_numpy()
     print(f"features: {X_train.shape}")
 
-    clf = LogisticRegressionScratch(
-        learning_rate=config.LEARNING_RATE,
-        n_iters=config.N_ITERS,
-        lambda_reg=config.LAMBDA_REG,
-        momentum=config.MOMENTUM,
-        print_every=config.PRINT_EVERY,
-    )
+    if config.USE_SKLEARN:
+        print("using sklearn LogisticRegression (L-BFGS)")
+        clf = SklearnLR(C=config.SKLEARN_C, max_iter=config.SKLEARN_MAX_ITER)
+    else:
+        print("using hand-built LogisticRegression (GD + momentum)")
+        clf = LogisticRegressionScratch(
+            learning_rate=config.LEARNING_RATE,
+            n_iters=config.N_ITERS,
+            lambda_reg=config.LAMBDA_REG,
+            momentum=config.MOMENTUM,
+            print_every=config.PRINT_EVERY,
+        )
     t0 = time.time()
     clf.fit(X_train, y_train, X_dev=X_dev, y_dev=y_dev)
     print(f"trained in {time.time() - t0:.1f}s")

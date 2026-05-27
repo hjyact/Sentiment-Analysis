@@ -77,6 +77,29 @@ class LogisticRegressionScratch:
         return (self.predict_proba(X) >= threshold).astype(np.int64)
 
 
+class SklearnLR:
+    """Thin wrapper so predict_proba returns 1-D (positive class only)."""
+
+    def __init__(self, C=1.0, max_iter=1000):
+        from sklearn.linear_model import LogisticRegression
+        self.clf = LogisticRegression(C=C, max_iter=max_iter, solver="lbfgs")
+        self.w = None
+        self.b = 0.0
+        self.history = []
+
+    def fit(self, X, y, X_dev=None, y_dev=None):
+        self.clf.fit(X, y)
+        self.w = self.clf.coef_.ravel()
+        self.b = float(self.clf.intercept_[0])
+        return self
+
+    def predict_proba(self, X):
+        return self.clf.predict_proba(X)[:, 1]
+
+    def predict(self, X, threshold=0.5):
+        return (self.predict_proba(X) >= threshold).astype(np.int64)
+
+
 class SentimentModel:
     def __init__(self, vectorizer, classifier):
         self.vectorizer = vectorizer

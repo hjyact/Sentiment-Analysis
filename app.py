@@ -6,7 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from src import config
-from src.model import LogisticRegressionScratch, SentimentModel  # noqa: F401  (unpickling)
+from src.model import LogisticRegressionScratch, SklearnLR, SentimentModel  # noqa: F401  (unpickling)
 
 
 st.set_page_config(page_title="Sentiment Analysis", layout="centered")
