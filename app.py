@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from src import config
+from src.ensemble import CuMLSideFold, CuMLTextFold, OOFEnsembleSentimentModel, SklearnTextFold, TorchLinearFold  # noqa: F401  (unpickling)
 from src.model import LogisticRegressionScratch, SklearnLR, SentimentModel  # noqa: F401  (unpickling)
 
 
@@ -27,14 +28,14 @@ def load_metrics():
         return json.load(f)
 
 
-st.title("Sentiment Analysis")
-st.caption("Amazon product reviews — positive (1) vs. negative (0)")
+st.title("GPU Stacked Sentiment Analysis")
+st.caption("Amazon product reviews — 10-model OOF ensemble with multi-stage stacking")
 
 bundle = load_model()
 metrics = load_metrics()
 
 if bundle is None:
-    st.error("Trained model not found. Run `python -m src.download_data` then `python -m src.train`.")
+    st.error("Trained model not found. Run `python -m src.download_data` then `python -m src.train_oof_ensemble`.")
     st.stop()
 
 tab_single, tab_batch, tab_metrics = st.tabs(["Single", "Batch (CSV)", "Metrics"])
@@ -96,6 +97,14 @@ with tab_metrics:
             m = metrics.get(split, {})
             c.metric(f"{split} acc", f"{m.get('accuracy', 0):.4f}")
             c.write(f"f1: {m.get('f1', 0):.4f}")
+
+        test_f1 = metrics.get("test", {}).get("f1")
+        if test_f1 is not None:
+            st.metric("test F1 lift vs README baseline", f"+{test_f1 - 0.88:.4f}", f"{test_f1:.4f}")
+
+        if metrics.get("stage2_models"):
+            st.subheader("Stacking")
+            st.dataframe(pd.DataFrame(metrics["stage2_models"]).T, use_container_width=True)
 
         if metrics.get("history"):
             hist = pd.DataFrame(metrics["history"])
