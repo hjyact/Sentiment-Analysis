@@ -13,11 +13,31 @@ from src.model import LogisticRegressionScratch, SklearnLR, SentimentModel  # no
 st.set_page_config(page_title="Sentiment Analysis", layout="centered")
 
 
+def cuda_available():
+    try:
+        import cupy as cp
+
+        return cp.cuda.runtime.getDeviceCount() > 0
+    except Exception:
+        return False
+
+
+def select_model_path():
+    if cuda_available() and config.MODEL_PATH.exists():
+        return config.MODEL_PATH, "GPU multi-stage stack"
+    if config.CPU_MODEL_PATH.exists():
+        return config.CPU_MODEL_PATH, "CPU-safe TF-IDF fallback"
+    if config.MODEL_PATH.exists():
+        return config.MODEL_PATH, "default model"
+    return None, None
+
+
 @st.cache_resource
 def load_model():
-    if not config.MODEL_PATH.exists():
+    model_path, model_label = select_model_path()
+    if model_path is None:
         return None
-    return joblib.load(config.MODEL_PATH)
+    return joblib.load(model_path), model_label
 
 
 @st.cache_data
@@ -28,15 +48,17 @@ def load_metrics():
         return json.load(f)
 
 
-st.title("GPU Stacked Sentiment Analysis")
-st.caption("Amazon product reviews — 10-model OOF ensemble with multi-stage stacking")
+st.title("Sentiment Analysis")
 
-bundle = load_model()
+loaded = load_model()
 metrics = load_metrics()
 
-if bundle is None:
+if loaded is None:
     st.error("Trained model not found. Run `python -m src.download_data` then `python -m src.train_oof_ensemble`.")
     st.stop()
+
+bundle, model_label = loaded
+st.caption(f"Amazon product reviews — serving {model_label}")
 
 tab_single, tab_batch, tab_metrics = st.tabs(["Single", "Batch (CSV)", "Metrics"])
 

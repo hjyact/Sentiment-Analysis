@@ -58,6 +58,7 @@ src/
   predict.py                        cli inference
   inspect_weights.py                print learned word weights
 models/sentiment_model.joblib       trained model
+models/sentiment_model_cpu.joblib   CPU-safe fallback for Streamlit Cloud
 ```
 
 ## Run
@@ -79,3 +80,5 @@ Train several TF-IDF linear models on the GPU, build out-of-fold predictions, ad
 ```
 python -m src.train_oof_ensemble
 ```
+
+The Streamlit app serves the GPU stack when CUDA is available. On Streamlit Cloud or another CPU-only host, it automatically falls back to `models/sentiment_model_cpu.joblib` so the app can run without cuML/CuPy GPU deserialization.

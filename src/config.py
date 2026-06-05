@@ -31,6 +31,7 @@ MOMENTUM = 0.9
 PRINT_EVERY = 100
 
 MODEL_PATH = MODELS_DIR / "sentiment_model.joblib"
+CPU_MODEL_PATH = MODELS_DIR / "sentiment_model_cpu.joblib"
 METRICS_PATH = MODELS_DIR / "metrics.json"
 TRAIN_CSV = DATA_PROCESSED / "train.csv"
 DEV_CSV = DATA_PROCESSED / "dev.csv"
