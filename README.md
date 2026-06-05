@@ -39,8 +39,10 @@ Trained with batch gradient descent + momentum (β=0.9) and L2 regularization. F
 
 | | train | dev | test |
 |---|---|---|---|
-| accuracy | 0.88 | 0.88 | 0.88 |
-| f1 | 0.88 | 0.87 | 0.88 |
+| accuracy | 0.9095 | 0.9110 | 0.9128 |
+| f1 | 0.9091 | 0.9108 | 0.9128 |
+
+The previous README baseline was `0.88` test F1, so the GPU multi-stage stack improves test F1 by `+0.0328` absolute points. Compared with the single TF-IDF logistic regression run before ensembling (`0.9076` test F1), the final stack is `+0.0053` higher.
 
 ## Layout
 
@@ -68,4 +70,12 @@ pip install -r requirements.txt
 python -m src.download_data
 python -m src.train
 streamlit run app.py
+```
+
+## OOF GPU ensemble
+
+Train several TF-IDF linear models on the GPU, build out-of-fold predictions, add side-card text features, and fit a stacking model:
+
+```
+python -m src.train_oof_ensemble
 ```
